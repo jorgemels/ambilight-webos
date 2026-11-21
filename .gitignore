@@ -1,0 +1,12 @@
+# Claves del servicio: se generan en el despliegue, nunca se versionan
+id_tv
+id_tv.pub
+*.pem
+*.key
+
+# Estado local
+__pycache__/
+*.pyc
+*.log
+*.bak
+*.bak-*

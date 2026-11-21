@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ambilight</title>
+<style>
+  :root{
+    --bg:#0e1013; --card:#171a1f; --line:#272c34; --txt:#e6e9ef;
+    --dim:#8b93a1; --acc:#4da3ff; --ok:#3ecf8e; --bad:#ff6b6b; --warn:#ffb454;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    padding:24px 16px 56px}
+  .wrap{max-width:720px;margin:0 auto}
+  h1{font-size:21px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r);padding:18px;margin-bottom:14px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--dim);margin:0 0 14px;font-weight:600}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px}
+  .stat{background:#12151a;border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  .stat b{display:block;font-size:19px;font-variant-numeric:tabular-nums;line-height:1.25}
+  .stat span{color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+
+  .row{display:flex;align-items:center;gap:14px;padding:13px 0;
+    border-top:1px solid var(--line)}
+  .row:first-of-type{border-top:0;padding-top:2px}
+  .row label{flex:1;min-width:0}
+  .row label i{display:block;font-style:normal;color:var(--dim);
+    font-size:12px;margin-top:2px}
+  .val{font-variant-numeric:tabular-nums;color:var(--acc);
+    min-width:58px;text-align:right;font-size:14px}
+  input[type=range]{flex:1.35;min-width:120px;accent-color:var(--acc);height:22px}
+
+  .sw{position:relative;width:46px;height:26px;flex:none}
+  .sw input{opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+  .sw span{position:absolute;inset:0;background:#333a45;border-radius:99px;
+    transition:.18s;pointer-events:none}
+  .sw span::after{content:"";position:absolute;width:20px;height:20px;top:3px;left:3px;
+    background:#fff;border-radius:50%;transition:.18s}
+  .sw input:checked+span{background:var(--acc)}
+  .sw input:checked+span::after{transform:translateX(20px)}
+
+  .btns{display:flex;gap:10px;flex-wrap:wrap}
+  button{flex:1;min-width:150px;background:#1f242c;color:var(--txt);
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    font:inherit;font-weight:500;cursor:pointer;transition:.15s}
+  button:hover:not(:disabled){background:#272e38;border-color:#3a434f}
+  button:disabled{opacity:.5;cursor:progress}
+  button.primary{background:var(--acc);border-color:var(--acc);color:#06121f;font-weight:600}
+  button.primary:hover:not(:disabled){background:#67b2ff}
+
+  .tvwrap{background:#0b0d10;border:1px solid var(--line);border-radius:11px;
+    padding:10px;display:flex;justify-content:center}
+  #tv{width:100%;max-width:560px;height:auto;display:block}
+  .presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+  .preset{background:#12151a;border:1px solid var(--line);border-radius:11px;
+    padding:13px 10px;text-align:center;cursor:pointer;transition:.15s;
+    font:inherit;color:var(--txt);user-select:none;-webkit-user-select:none}
+  .preset:hover{background:#1b1f26;border-color:#39424e}
+  .preset.on{border-color:var(--acc);background:#13202e}
+  .preset b{display:block;font-size:21px;line-height:1.5}
+  .preset span{font-size:12.5px;color:var(--dim)}
+  .preset.on span{color:var(--acc)}
+  .log{margin-top:12px;max-height:168px;overflow-y:auto;font-size:12.5px;
+    border-top:1px solid var(--line);padding-top:10px}
+  .log div{display:flex;gap:9px;padding:3px 0;align-items:baseline}
+  .log time{color:var(--dim);font-variant-numeric:tabular-nums;flex:none;font-size:11.5px}
+  .log p{margin:0;flex:1;min-width:0}
+  .log .vacio{color:var(--dim);display:block}
+  .boton{flex:1;min-width:150px;display:block;text-align:center;
+    background:#1f242c;color:var(--txt);text-decoration:none;
+    border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    font-weight:500;transition:.15s}
+  .boton:hover{background:#272e38;border-color:#3a434f}
+  .note{color:var(--dim);font-size:12.5px;margin-top:12px;line-height:1.55}
+  #msg{margin-top:12px;font-size:13px;min-height:19px}
+  @media (max-width:430px){
+    .row{flex-wrap:wrap} .row label{flex:1 0 100%} input[type=range]{flex:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ambilight</h1>
+  <div class="sub" id="hosts">&nbsp;</div>
+
+  <div class="card">
+    <h2>Estado</h2>
+    <div class="grid" id="stats"></div>
+    <div class="note" id="cadena">&nbsp;</div>
+  </div>
+
+  <div class="card">
+    <h2>Presets</h2>
+    <div class="presets" id="presets"></div>
+    <div class="note">
+      Se aplican al instante. <b>Mantén pulsado</b> un preset para guardarle
+      los valores que tengas puestos en este momento.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Imagen</h2>
+
+    <div class="row">
+      <label>Brillo
+        <i>Intensidad general de la tira (luminanceGain)</i></label>
+      <input type="range" id="lum" min="0" max="1" step="0.05">
+      <div class="val" id="lumV">—</div>
+    </div>
+
+    <div class="row">
+      <label>Piso de luz
+        <i>0 = se apagan del todo en negro</i></label>
+      <input type="range" id="back" min="0" max="0.02" step="0.0005">
+      <div class="val" id="backV">—</div>
+    </div>
+
+    <div class="row">
+      <label>Suavizado
+        <i>Apagado = mínima latencia · Encendido = sin parpadeo</i></label>
+      <div class="sw"><input type="checkbox" id="smooth"><span></span></div>
+    </div>
+
+    <div class="row">
+      <label>Tiempo de suavizado
+        <i>Solo aplica al guardar. Más alto = más retardo</i></label>
+      <input type="range" id="stime" min="20" max="300" step="10" value="80">
+      <div class="val" id="stimeV">80 ms</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Controlador</h2>
+    <div class="row">
+      <label>Encendido
+        <i>Corta la salida sin tocar HyperHDR</i></label>
+      <div class="sw"><input type="checkbox" id="on"><span></span></div>
+    </div>
+    <div class="row">
+      <label>Brillo maestro de WLED
+        <i>HyperHDR lo sube a 255 al reconectar</i></label>
+      <input type="range" id="bri" min="0" max="255" step="5">
+      <div class="val" id="briV">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Vigilante</h2>
+    <div class="row">
+      <label>Reparación automática
+        <i id="vigInfo">Reinicia PicCap solo si la cadena se rompe</i></label>
+      <div class="sw"><input type="checkbox" id="vig"><span></span></div>
+    </div>
+    <div id="log" class="log"></div>
+  </div>
+
+  <div class="card">
+    <h2>Acciones</h2>
+    <div class="btns">
+      <button id="btnPic">Reiniciar PicCap</button>
+      <button id="btnSave" class="primary">Guardar en disco</button>
+    </div>
+    <div id="msg"></div>
+    <div class="note">
+      Los deslizadores aplican <b>en vivo</b> pero no sobreviven un reinicio.
+      <b>Guardar</b> los escribe en la TV: tarda ~35&nbsp;s porque reinicia
+      HyperHDR y luego PicCap, que es el orden que exige la cadena.
+    </div>
+  </div>
+  <div class="card">
+    <h2>Vista previa</h2>
+    <div class="tvwrap"><canvas id="tv" width="640" height="400"></canvas></div>
+    <div class="note" id="tvNota">&nbsp;</div>
+    <div class="btns" style="margin-top:12px">
+      <a class="boton" href="/pruebas" target="_blank" rel="noopener">
+        Abrir pruebas de posición</a>
+    </div>
+    <div class="note">
+      Las pruebas se muestran <b>en la TV</b> (esta PC está conectada por HDMI):
+      pintan patrones en las orillas para verificar qué LED físico corresponde
+      a cada zona de la pantalla.
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const post = (p, b) => fetch(p, {method:'POST', headers:{'Content-Type':'application/json'},
+                               body: JSON.stringify(b||{})}).then(r => r.json());
+
+let tocando = false;      // no pisar los sliders mientras el usuario arrastra
+let ultimo = {};
+
+function pinta(d){
+  $('#hosts').textContent = 'TV ' + d.tv + '  ·  ' + d.wled_host +
+    (d.wled && d.wled.ip ? ' (' + d.wled.ip + ')' : '');
+
+  const h = d.hyperhdr||{}, w = d.wled||{}, p = d.piccap||{};
+  const cel = (v, lbl, cls) => '<div class="stat"><b class="' + (cls||'') + '">' +
+        v + '</b><span>' + lbl + '</span></div>';
+
+  $('#stats').innerHTML =
+    cel(p.ok ? p.fps : '—', 'PicCap fps', p.ok && p.conectado ? 'ok' : 'bad') +
+    cel(w.ok ? w.fps : '—', 'WLED fps', w.ok && w.live ? 'ok' : 'bad') +
+    cel(w.ok ? w.pwr + ' mA' : '—', 'consumo') +
+    cel(w.ok ? w.count : '—', 'leds') +
+    cel(w.ok ? w.rssi : '—', 'señal dBm',
+        w.ok ? (w.rssi > -60 ? 'ok' : w.rssi > -72 ? 'warn' : 'bad') : '');
+
+  const viva = h.ok && h.fuente && h.leddevice && w.ok && w.live;
+  $('#cadena').innerHTML = viva
+    ? '<span class="ok">● Cadena activa</span> — PicCap → HyperHDR (' + h.fuente + ') → WLED'
+    : '<span class="bad">● Cadena interrumpida</span> — ' +
+      (!p.conectado ? 'PicCap no está conectado: prueba «Reiniciar PicCap».'
+       : !h.fuente ? 'HyperHDR no recibe video.'
+       : !w.live ? 'El controlador no recibe datos.' : 'revisa el estado.');
+
+  if (tocando) return;
+  ultimo = d;
+  if (h.ok){
+    if (h.luminanceGain != null){ $('#lum').value = h.luminanceGain;
+      $('#lumV').textContent = (+h.luminanceGain).toFixed(2); }
+    if (h.backlightThreshold != null){ $('#back').value = h.backlightThreshold;
+      $('#backV').textContent = (+h.backlightThreshold).toFixed(4); }
+    $('#smooth').checked = !!h.suavizado;
+  }
+  if (w.ok){ $('#on').checked = !!w.on; $('#bri').value = w.bri;
+    $('#briV').textContent = w.bri; }
+
+  document.querySelectorAll('.preset').forEach(b =>
+    b.classList.toggle('on', b.dataset.n === d.preset));
+
+  const v = d.vigilante || {};
+  $('#vig').checked = !!v.activo;
+  $('#vigInfo').textContent = !v.activo
+    ? 'Apagado: nadie repara la cadena si se cae'
+    : v.rendido
+      ? 'Se rindió tras varios intentos — requiere revisión manual'
+      : v.intentos
+        ? 'Reparando: ' + v.intentos + ' intento(s) en curso'
+        : 'Reinicia PicCap solo si la cadena se rompe';
+}
+
+// ---- vista previa: cada LED se dibuja donde HyperHDR dice que muestrea ----
+const cv = $('#tv'), cx = cv.getContext('2d');
+let LAYOUT = null, verPreview = true;
+
+function dibujaTV(leds){
+  const W = cv.width, H = cv.height, M = 26;       // margen para la tira
+  const px = M, py = M, pw = W - M*2, ph = H - M*2;  // rectangulo de pantalla
+
+  cx.clearRect(0, 0, W, H);
+  cx.fillStyle = '#15181d';
+  cx.fillRect(px, py, pw, ph);
+  cx.strokeStyle = '#2b313a'; cx.lineWidth = 1;
+  cx.strokeRect(px + .5, py + .5, pw - 1, ph - 1);
+
+  if (!LAYOUT){
+    cx.fillStyle = '#6b7280'; cx.font = '15px system-ui'; cx.textAlign = 'center';
+    cx.fillText('Sin layout', W/2, H/2);
+    return;
+  }
+  LAYOUT.forEach((L, i) => {
+    // Centro de la zona que muestrea este LED, llevado al borde mas cercano.
+    const hx = (L.hmin + L.hmax) / 2, vy = (L.vmin + L.vmax) / 2;
+    const dIzq = hx, dDer = 1 - hx, dArr = vy, dAba = 1 - vy;
+    const min = Math.min(dIzq, dDer, dArr, dAba);
+    let x, y;
+    if (min === dArr)      { x = px + hx*pw;  y = py - M/2; }
+    else if (min === dAba) { x = px + hx*pw;  y = py + ph + M/2; }
+    else if (min === dIzq) { x = px - M/2;    y = py + vy*ph; }
+    else                   { x = px + pw + M/2; y = py + vy*ph; }
+
+    const c = leds && leds[i] ? leds[i] : [26,30,36];
+    cx.fillStyle = 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+    cx.beginPath(); cx.arc(x, y, 5, 0, 6.2832); cx.fill();
+  });
+}
+
+async function refrescaLeds(){
+  if (!verPreview) return;
+  try {
+    const d = await (await fetch('/api/leds')).json();
+    if (d.layout) LAYOUT = d.layout;
+    dibujaTV(d.leds);
+    $('#tvNota').innerHTML = d.error
+      ? '<span class="bad">' + d.error + '</span>'
+      : d.conectando
+        ? 'Conectando con HyperHDR…'
+        : (LAYOUT ? LAYOUT.length : 0) + ' LEDs · colores en vivo. ' +
+          'Si no corresponden a lo que ves en pantalla, el layout está mal.';
+  } catch(e){ /* el estado general ya avisa de caidas */ }
+}
+
+// Solo pide colores cuando la pestaña esta visible: el stream se corta solo.
+document.addEventListener('visibilitychange', () => {
+  verPreview = !document.hidden;
+});
+
+let PRESETS = [];
+
+async function cargaPresets(){
+  try {
+    PRESETS = (await (await fetch('/api/presets')).json()).presets;
+    $('#presets').innerHTML = PRESETS.map(p =>
+      '<button class="preset" data-n="' + p.nombre + '"><b>' + p.icono +
+      '</b><span>' + p.nombre + '</span></button>').join('');
+    document.querySelectorAll('.preset').forEach(armaPreset);
+  } catch(e){ $('#presets').innerHTML = '<span class="vacio">No pude leerlos.</span>'; }
+}
+
+// Toque = aplicar. Pulsación larga = sobrescribir con lo que hay puesto ahora.
+function armaPreset(btn){
+  const nombre = btn.dataset.n;
+  let timer, largo = false;
+
+  const empieza = () => {
+    largo = false;
+    timer = setTimeout(async () => {
+      largo = true;
+      if (!confirm('¿Guardar los valores actuales en «' + nombre + '»?')) return;
+      await post('/api/preset-guardar', {nombre});
+      msg('Preset «' + nombre + '» actualizado.', 'ok');
+      refrescaLog();
+    }, 650);
+  };
+  const termina = async () => {
+    clearTimeout(timer);
+    if (largo) return;
+    await post('/api/preset', {nombre});
+    refresca(); refrescaLog();
+  };
+
+  btn.addEventListener('pointerdown', empieza);
+  btn.addEventListener('pointerup', termina);
+  btn.addEventListener('pointerleave', () => clearTimeout(timer));
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+const RELOJ = new Intl.DateTimeFormat('es-MX',
+  {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false});
+const COLOR = {ok:'ok', aviso:'warn', error:'bad', info:''};
+
+async function refrescaLog(){
+  try {
+    const {eventos} = await (await fetch('/api/eventos')).json();
+    $('#log').innerHTML = eventos.length
+      ? eventos.map(e => '<div><time>' + RELOJ.format(new Date(e.t*1000)) +
+          '</time><p class="' + (COLOR[e.tipo]||'') + '">' + e.texto + '</p></div>').join('')
+      : '<span class="vacio">Sin eventos todavía.</span>';
+  } catch(e){ /* el refresco de estado ya avisa si el servidor no responde */ }
+}
+
+$('#vig').addEventListener('change', async e => {
+  await post('/api/vigilante', {activo: e.target.checked});
+  refrescaLog(); refresca();
+});
+
+async function refresca(){
+  try { pinta(await (await fetch('/api/estado')).json()); }
+  catch(e){ $('#cadena').innerHTML = '<span class="bad">● Sin conexión con el servidor local</span>'; }
+}
+
+function desliza(id, vid, fmt, enviar){
+  const el = $(id);
+  let t;
+  el.addEventListener('pointerdown', () => tocando = true);
+  el.addEventListener('input', () => {
+    $(vid).textContent = fmt(el.value);
+    clearTimeout(t);
+    t = setTimeout(() => enviar(parseFloat(el.value)), 120);
+  });
+  el.addEventListener('change', () => setTimeout(() => tocando = false, 600));
+}
+
+desliza('#lum', '#lumV', v => (+v).toFixed(2),
+        v => post('/api/ajuste', {luminanceGain: v}));
+desliza('#back', '#backV', v => (+v).toFixed(4),
+        v => post('/api/ajuste', {backlightThreshold: v, backlightColored: v > 0}));
+desliza('#bri', '#briV', v => v, v => post('/api/wled', {bri: v}));
+desliza('#stime', '#stimeV', v => v + ' ms', () => {});
+
+$('#smooth').addEventListener('change', e =>
+  post('/api/componente', {nombre: 'SMOOTHING', estado: e.target.checked}));
+$('#on').addEventListener('change', e =>
+  post('/api/wled', {on: e.target.checked}));
+
+function msg(txt, cls){ $('#msg').innerHTML = '<span class="' + (cls||'') + '">' + txt + '</span>'; }
+
+$('#btnPic').addEventListener('click', async e => {
+  e.target.disabled = true; msg('Reiniciando PicCap…');
+  try { await post('/api/piccap-reiniciar'); msg('PicCap reiniciado.', 'ok'); }
+  catch(err){ msg('Falló: ' + err, 'bad'); }
+  e.target.disabled = false; refresca(); refrescaLog();
+});
+
+$('#btnSave').addEventListener('click', async e => {
+  e.target.disabled = true;
+  msg('Guardando… reiniciando HyperHDR y PicCap, ~35 s.', 'warn');
+  try {
+    const r = await post('/api/guardar', {
+      luminanceGain: parseFloat($('#lum').value),
+      backlightThreshold: parseFloat($('#back').value),
+      backlightColored: parseFloat($('#back').value) > 0,
+      smoothingEnable: $('#smooth').checked,
+      smoothingTime: parseInt($('#stime').value, 10)
+    });
+    msg(r.ok ? 'Guardado. Sobrevive reinicios de la TV.' : 'No se pudo guardar.',
+        r.ok ? 'ok' : 'bad');
+  } catch(err){ msg('Falló: ' + err, 'bad'); }
+  e.target.disabled = false; refresca(); refrescaLog();
+});
+
+refresca();  refrescaLog();  cargaPresets();  refrescaLeds();
+setInterval(refresca, 3000);
+setInterval(refrescaLog, 6000);
+setInterval(refrescaLeds, 150);   // ~7 fps: suficiente para verificar, barato
+</script>
+</body>
+</html>

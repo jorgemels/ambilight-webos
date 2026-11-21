@@ -1,0 +1,30 @@
+[
+  {
+    "nombre": "Película",
+    "icono": "🎬",
+    "luminanceGain": 0.35,
+    "backlightThreshold": 0.0,
+    "suavizado": false
+  },
+  {
+    "nombre": "Juego",
+    "icono": "🎮",
+    "luminanceGain": 0.6,
+    "backlightThreshold": 0.0,
+    "suavizado": false
+  },
+  {
+    "nombre": "Normal",
+    "icono": "📺",
+    "luminanceGain": 0.5,
+    "backlightThreshold": 0.0,
+    "suavizado": false
+  },
+  {
+    "nombre": "Noche",
+    "icono": "🌙",
+    "luminanceGain": 0.15,
+    "backlightThreshold": 0.0,
+    "suavizado": true
+  }
+]
